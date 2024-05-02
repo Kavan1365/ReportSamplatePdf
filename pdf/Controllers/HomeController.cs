@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 namespace pdf.Controllers
 {
 
@@ -61,6 +62,43 @@ namespace pdf.Controllers
         #region form
         public IActionResult Index()
         {
+            var obj = new List<VW_DEFViewModel>();
+            var connectionString = _config.GetConnectionString("SqlServer");
+            // var connectionString = "Data Source=5.201.136.50,1435;Initial Catalog=EnKM;User ID=kavan;Password=KavanAhmadi@1402;TrustServerCertificate=True";
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+
+
+                var queryString = $"use EnKM SELECT  [DfEnt1Name],[DefName2],[RoleName2],[EntityRoleName]  FROM [EnKM].[dbo].[VW_DEF]";
+                using (var da = new SqlDataAdapter(queryString, connection))
+                {
+                    // you could also use a SqlDataReader instead
+                    // note that a DataTable does not need to be disposed since it does not implement IDisposable
+                    var tblPromotion = new DataTable();
+                    // avoid SQL-Injection
+                    try
+                    {
+                        connection.Open(); // not necessarily needed in this case because DataAdapter.Fill does it otherwise 
+                        da.Fill(tblPromotion);
+                        if (tblPromotion.Rows.Count != 0)
+                        {
+                            for (int i = 0; i < tblPromotion.Rows.Count; i++)
+                            {
+                                var promoRow = tblPromotion.Rows[i];
+                                obj.Add(new VW_DEFViewModel() { def1Name = promoRow.Field<String>("DfEnt1Name"), EntityRoleName = promoRow.Field<String>("EntityRoleName"), RoleName2 = promoRow.Field<String>("RoleName2") });
+
+                            }
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // log this exception or throw it up the StackTrace
+                        // we do not need a finally-block to close the connection since it will be closed implicitly in an using-statement
+                        throw;
+                    }
+                }
+            }
 
             return View(new DataTypeViewModelPdf() { });
         }
